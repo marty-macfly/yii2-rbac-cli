@@ -22,6 +22,21 @@ or add
 
 to the require section of your `composer.json` file.
 
+Configure
+------------
+
+Configure **config/console.php** as follows
+
+```php
+  'modules' => [
+     ................
+    'rbac'  => [
+      'class'       => 'macfly\rbac\Module',
+    ],
+    ................
+  ],
+```
+
 Usage
 ------------
 
