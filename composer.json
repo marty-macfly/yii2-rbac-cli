@@ -1,0 +1,29 @@
+{
+	"name": "macfly/yii2-rbac-cli",
+	"description": "Yii2 module, provide a cli to load initial permission and roles in rbac from a yaml file",
+	"keywords": ["yii2", "cli", "load", "rbac", "yaml", "yml"],
+	"type": "yii2-extension",
+	"license": "BSD-3-Clause",
+	"support": {
+		"issues": "https://github.com/Marty-Macfly/yii2-rbac-cli/issues",
+		"source": "https://github.com/Marty-Macfly/yii2-rbac-cli"
+	},
+	"authors": [
+		{
+			"name": "Charles DELFLY",
+			"email": "c.delfly@linkbynet.com"
+		}
+	],
+	"minimum-stability": "stable",
+	"require": {
+    "yiisoft/yii2": "~2.0.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"macfly\\rbac\\": "src/"
+		}
+	},
+  "extra": {
+    "bootstrap": "macfly\\rbac\\Bootstrap"
+  }
+}
