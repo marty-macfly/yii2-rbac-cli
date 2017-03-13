@@ -20,7 +20,7 @@ class LoadController extends \yii\console\Controller
 	{
 		if(!file_exists($file))
 		{
-			$this->stdout(sprintf("file '%s' doesn't exit", $file), \yii\helpers\Console::BOLD);
+			$this->stderr(sprintf("file '%s' doesn't exit", $file), \yii\helpers\Console::BOLD);
 			return \yii\console\Controller::EXIT_CODE_ERROR;
 		}
 
