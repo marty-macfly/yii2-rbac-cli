@@ -61,7 +61,9 @@ class LoadController extends \yii\console\Controller
 				{
 					foreach($infos['children'] as $child)
 					{
-						if(!in_array($child, $children) && array_key_exists($child, $permissions))
+						if(!in_array($child, $children)
+							&& array_key_exists($child, $permissions)
+							&& !$auth->hasChild($role, $permissions[$child]))
 						{
 							$auth->addChild($role, $permissions[$child]);
 						}
