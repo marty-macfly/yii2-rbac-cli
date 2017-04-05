@@ -32,18 +32,21 @@ class LoadController extends \yii\console\Controller
     $auth 				= Yii::$app->authManager;
 		$permissions	= [];
 
-		foreach($data['permissions'] as $name => $infos)
+		if(array_key_exists('permissions', $data) && count($data['permissions']) > 0)
 		{
-			if(is_null($permission = $auth->getPermission($name)))
+			foreach($data['permissions'] as $name => $infos)
 			{
-    		$permission = $auth->createPermission($name);
-    		$permission->description = array_key_exists('desc', $infos) ? $infos['desc'] : '';
-        $auth->add($permission);
+				if(is_null($permission = $auth->getPermission($name)))
+				{
+					$permission = $auth->createPermission($name);
+					$permission->description = array_key_exists('desc', $infos) ? $infos['desc'] : '';
+					$auth->add($permission);
+				}
+				$permissions[$name]	= $permission;
 			}
-			$permissions[$name]	= $permission;
 		}
 
-		if(array_key_exists('roles', $data))
+		if(array_key_exists('roles', $data) && count($data['roles']) > 0)
 		{
 			foreach($data['roles'] as $name => $infos)
 			{
