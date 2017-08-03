@@ -27,12 +27,7 @@ class LoadController extends \yii\console\Controller
             throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
         }
 
-        if(Yii::$app->identity->findIdentity($userid) === null)
-        {
-            throw new Exception(sprintf("User id '%d' doesn't exist", $userid));
-        }
-
-        return $auth->getAssignment($obj, $userid) ? true : $auth->assign($obj, $userid);
+        return $auth->getAssignment($permissionOrRole, $userid) ? true : $auth->assign($obj, $userid);
     }
 
     /**
