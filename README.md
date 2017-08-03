@@ -40,3 +40,54 @@ Configure **config/console.php** as follows
 Usage
 ------------
 
+# Import static role and permission list
+
+Create a yaml file with le list of static role and permission you want to create
+
+```yaml
+# Permission section
+permissions:
+  list:
+    desc: List user
+  create:
+    desc: Create user
+  update:
+    desc: Edit user
+  profile:
+    desc: Edit user profile
+  delete:
+    desc: Remove user
+
+# Role section
+roles:
+  view:
+    desc: View users
+    children:
+    - list
+    - info
+  admin:
+    desc: Administration
+    children:
+    - view
+```
+
+After run the @rbac/yaml@ with the path to your yaml file
+
+```
+php yii rbac/load/yaml /tmp/role.yml
+```
+
+# Add role and permisison to a specific user
+
+You can add some role and permission from the cli to a specific user id.
+
+```
+php yii rbac/load/add userid permissionOrRoleName
+```
+
+For example to add role 'view' to user with id '1' :
+
+
+```
+php yii rbac/load/add 1 view
+```
