@@ -10,13 +10,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 
 Either run
 
-```
+```sh
 php composer.phar require --prefer-dist "macfly/yii2-rbac-cli" "*"
 ```
 
 or add
 
-```
+```json
 "macfly/yii2-rbac-cli": "*"
 ```
 
@@ -81,21 +81,21 @@ assign:
 
 After run the @rbac/yaml@ with the path to your yaml file
 
-```
+```sh
 php yii rbac/load/yaml /tmp/role.yml
 ```
 
-# Add role and permisison to a specific user
+# Add role or permission to a specific user
 
 You can add some role and permission from the cli to a specific user id.
 
-```
+```sh
 php yii rbac/load/add userid permissionOrRoleName
 ```
 
 For example to add role 'view' to user with id '1' :
 
 
-```
+```sh
 php yii rbac/load/add 1 view
 ```
