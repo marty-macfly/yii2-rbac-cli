@@ -106,7 +106,7 @@ class LoadController extends \yii\console\Controller
                     $this->actionAdd($userid, $permissionOrRole);
                 } catch(\Exception $exception)
                 {
-                    Yii::error(sprintf("%s", $e->msg));
+                    Yii::error(sprintf("%s", $exception->msg));
                 }
             }
         }
