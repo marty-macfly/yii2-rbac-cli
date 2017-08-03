@@ -69,6 +69,14 @@ roles:
     desc: Administration
     children:
     - view
+    
+# Assign permission and roles to a specific userid
+assign:
+  1:
+  - admin
+  - oauth.admin
+  2:
+  - user.info
 ```
 
 After run the @rbac/yaml@ with the path to your yaml file

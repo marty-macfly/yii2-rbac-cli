@@ -97,5 +97,13 @@ class LoadController extends \yii\console\Controller
                 }
             }
         }
+
+        if(array_key_exists('assign', $data) && count($data['assign']) > 0)
+        {
+            foreach($data['assign'] as $userid => $permissionOrRole)
+            {
+                $this->actionAdd($userid, $permissionOrRole);
+            }
+        }
     }
 }
