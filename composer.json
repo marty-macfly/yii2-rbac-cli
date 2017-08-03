@@ -16,12 +16,12 @@
 	],
 	"minimum-stability": "stable",
 	"require": {
-    "yiisoft/yii2": "~2.0.5",
+		"yiisoft/yii2": "~2.0.5",
 		"ext-yaml": "*"
 	},
 	"autoload": {
 		"psr-4": {
 			"macfly\\rbac\\": "src/"
 		}
-  }
+	}
 }
