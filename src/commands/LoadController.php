@@ -102,7 +102,12 @@ class LoadController extends \yii\console\Controller
         {
             foreach($data['assign'] as $userid => $permissionOrRole)
             {
-                $this->actionAdd($userid, $permissionOrRole);
+                try {
+                    $this->actionAdd($userid, $permissionOrRole);
+                } catch(\Exception $exception)
+                {
+                    Yii::error(sprintf("%s", $e->msg));
+                }
             }
         }
     }
