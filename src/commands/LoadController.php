@@ -100,13 +100,15 @@ class LoadController extends \yii\console\Controller
 
         if(array_key_exists('assign', $data) && count($data['assign']) > 0)
         {
-            foreach($data['assign'] as $userid => $permissionOrRole)
+            foreach($data['assign'] as $userid => $permissionOrRoles)
             {
-                try {
-                    $this->actionAdd($userid, $permissionOrRole);
-                } catch(\Exception $exception)
+                foreach($permissionOrRoles as $permissionOrRole)
                 {
-                    Yii::error(sprintf("%s", $exception->msg));
+                    try {
+                        $this->actionAdd($userid, $permissionOrRole);
+                    } catch (Exception $exception) {
+                        Yii::error(sprintf("%s", $exception->getMessage()));
+                    }
                 }
             }
         }
