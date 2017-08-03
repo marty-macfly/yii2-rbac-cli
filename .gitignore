@@ -1,0 +1,7 @@
+# Exclude vim swp file
+.*.swp
+
+composer.lock
+vendor/
+
+.idea/
