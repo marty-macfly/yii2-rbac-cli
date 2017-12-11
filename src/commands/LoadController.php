@@ -88,13 +88,16 @@ class LoadController extends \yii\console\Controller
         // Add rule
         $rule = null;
         if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null && ($rule = $this->auth->getRule($ruleName)) === null) {
-                $rule = Yii::createObject($ruleName);
+            $rule = Yii::createObject($ruleName);
+            if(($rule = ArrayHelper::getValue($this->rules, $rule->name)) === null && ($rule = $this->auth->getRule($rule->name)) === null) {
                 $this->auth->add($rule);
             }
-            $this->rules[$ruleName]	= $rule;
+            $this->rules[$rule->name] = $rule;
         }
+
         $item->ruleName = $rule;
+
+        // Manage item children
         $children = $this->auth->getChildren($name);
 
         // Delete children which have been removed.
