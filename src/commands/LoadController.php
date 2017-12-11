@@ -140,7 +140,7 @@ class LoadController extends \yii\console\Controller
 
         print_r($this->auth->getPermissions());
         print_r(ArrayHelper::getValue($data, 'permissions', []));
-        print_r(array_diff(array_keys($this->auth-getPermissions()), array_keys(ArrayHelper::getValue($data, 'permissions', []))));
+        print_r(array_diff(array_keys($this->auth->getPermissions()), array_keys(ArrayHelper::getValue($data, 'permissions', []))));
 
         foreach(ArrayHelper::getValue($data, 'roles', []) as $name => $infos)
         {
