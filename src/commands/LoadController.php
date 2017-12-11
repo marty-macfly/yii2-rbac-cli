@@ -4,6 +4,7 @@ namespace macfly\rbac\commands;
 use Yii;
 use yii\console\Exception;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Json;
 
 /**
  * This command manage permissions and roles.
@@ -13,6 +14,9 @@ use yii\helpers\ArrayHelper;
 class LoadController extends \yii\console\Controller
 {
     public $defaultAction = 'yaml';
+
+    protected $rules = [];
+    protected $items = [];
 
     /**
      * This command add role or permission to a specific user.
@@ -37,96 +41,89 @@ class LoadController extends \yii\console\Controller
      */
     public function actionYaml($file)
     {
+        $this->fileExist($file);
+        return $this->process(yaml_parse_file($file));
+    }
+
+    /**
+     * This command load roles and permissions from a Json file.
+     * @file string path to yaml file to be loaded
+     */
+    public function actionJson($file)
+    {
+        $this->fileExist($file);
+        return $this->process(Json::decode($file, true));
+    }
+
+    protected function fileExist($file)
+    {
         if(!file_exists($file))
         {
             $this->stderr(sprintf("file '%s' doesn't exit", $file), \yii\helpers\Console::BOLD);
-            return \yii\console\Controller::EXIT_CODE_ERROR;
+            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+        }
+    }
+
+    protected function createOrUpdateItem($type, $name, $infos) {
+        $auth = Yii::$app->authManager;
+        $type = ucfirst($type);
+        $isNew = false;
+
+        if(($item = call_user_func([$auth, 'get' . $type], $name)) === null)
+        {
+            $isNew = true;
+            $item = call_user_func([$auth, 'create' . $type], $name);
         }
 
-        return $this->process(yaml_parse_file($file));
+        $item->description = ArrayHelper::getValue($infos, 'desc', '');
+        $rule = null;
+        if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
+            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
+                $rule = Yii::createObject($ruleName);
+                $auth->add($rule);
+                $this->rules[$ruleName]	= $rule;
+            }
+        }
+        $item->ruleName = $rule;
+        $children = $auth->getChildren($name);
+
+        print_r($children);
+        print_r(ArrayHelper::getValue($infos, 'children',[]));
+
+        foreach(ArrayHelper::getValue($infos, 'children',[]) as $child)
+        {
+            if(!in_array($child, $children)
+                && ArrayHelper::keyExists($child, $this->items)
+                && !$auth->hasChild($item, $this->items[$child]))
+            {
+                $auth->addChild($item, $permissions[$child]);
+            }
+        }
+
+        call_user_func([$auth, $isNew ? 'add' : 'update'], $item);
+        $this->items[$name]	= $item;
     }
 
     protected function process($data)
     {
-        $auth = Yii::$app->authManager;
-        $permissions = [];
-        $rules = [];
-
-        if(ArrayHelper::keyExists('permissions', $data) && count($data['permissions']) > 0)
+        foreach(ArrayHelper::getValue($data, 'permissions', []) as $name => $infos)
         {
-            foreach($data['permissions'] as $name => $infos)
-            {
-                if(($permission = $auth->getPermission($name)) === null)
-                {
-                    $permission = $auth->createPermission($name);
-                    $permission->description = ArrayHelper::getValue($infos, 'desc', '');
-                    $auth->add($permission);
-                }
-                $permissions[$name]	= $permission;
-
-                if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-                    if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
-                        $rule = Yii::createObject($ruleName);
-                        $auth->add($rule);
-                        $rules[$ruleName]	= $rule;
-                    }
-                    $permission->ruleName = $rule;
-                    $auth->update($permission);
-                }
-            }
+            $this->createOrUpdateItem('permission', $name, $infos);
         }
 
-        if(ArrayHelper::keyExists('roles', $data) && count($data['roles']) > 0)
+        foreach(ArrayHelper::getValue($data, 'roles', []) as $name => $infos)
         {
-            foreach($data['roles'] as $name => $infos)
-            {
-                if(($role = $auth->getRole($name)) === null)
-                {
-                    $role = $auth->createRole($name);
-                    $role->description = ArrayHelper::getValue($infos, 'desc', '');
-                    $auth->add($role);
-                }
-
-                $permissions[$name]	= $role;
-
-                if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-                    if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
-                        $rule = Yii::createObject($ruleName);
-                        $auth->add($rule);
-                        $rules[$ruleName]	= $rule;
-                    }
-                    $permission->ruleName = $rule;
-                    $auth->update($permission);
-                }
-
-                $children = $auth->getChildren($name);
-
-                if(ArrayHelper::keyExists('children', $infos))
-                {
-                    foreach($infos['children'] as $child)
-                    {
-                        if(!in_array($child, $children)
-                            && ArrayHelper::keyExists($child, $permissions)
-                            && !$auth->hasChild($role, $permissions[$child]))
-                        {
-                            $auth->addChild($role, $permissions[$child]);
-                        }
-                    }
-                }
-            }
+            $this->createOrUpdateItem('role', $name, $infos);
         }
 
-        if(ArrayHelper::keyExists('assign', $data) && count($data['assign']) > 0)
+        foreach(ArrayHelper::getValue($data, 'assign', []) as $userid => $permissionOrRoles)
         {
-            foreach($data['assign'] as $userid => $permissionOrRoles)
+            foreach($permissionOrRoles as $permissionOrRole)
             {
-                foreach($permissionOrRoles as $permissionOrRole)
-                {
-                    try {
-                        $this->actionAdd($userid, $permissionOrRole);
-                    } catch (Exception $exception) {
-                        Yii::error(sprintf("%s", $exception->getMessage()));
-                    }
+                try {
+                    $this->actionAdd($userid, $permissionOrRole);
+                } catch (Exception $exception) {
+                    Yii::error(sprintf("%s", $exception->getMessage()));
                 }
             }
         }
