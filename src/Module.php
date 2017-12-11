@@ -6,7 +6,10 @@ use Yii;
 
 class Module extends \yii\base\Module
 {
-  /** @inheritdoc */
+
+	public $filterOnAppName = true;
+
+	/** @inheritdoc */
 	public function init()
 	{
 		parent::init();

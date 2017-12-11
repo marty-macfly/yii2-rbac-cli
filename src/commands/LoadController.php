@@ -86,18 +86,18 @@ class LoadController extends \yii\console\Controller
         $item->description = ArrayHelper::getValue($infos, 'desc', '');
 
         // Add rule
-        $rule = null;
         if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
             if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
                 if ($this->auth->getRule($rule->name) === null) {
                     $this->auth->add($rule);
+                    $this->rules[$ruleName] = $rule;
                 }
             }
-            $this->rules[$ruleName] = $rule;
+            $item->ruleName = $rule->name;
+        } else {
+            $item->ruleName = null;
         }
-
-        $item->ruleName = $rule;
 
         // Manage item children
         $children = $this->auth->getChildren($name);
@@ -131,20 +131,45 @@ class LoadController extends \yii\console\Controller
         $this->items[$name]	= $item;
     }
 
-    protected function process($data)
-    {
-        foreach(ArrayHelper::getValue($data, 'permissions', []) as $name => $infos)
+    protected function removeItem($type, $name) {
+        $type = ucfirst($type);
+
+        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) === null)
         {
-            $this->createOrUpdateItem('permission', $name, $infos);
+            Yii::info(sprintf("Delete item: %s", $name));
+            unset($this->items[$name]);
+            return $this->auth->remove($item);
         }
 
-        print_r($this->auth->getPermissions());
-        print_r(ArrayHelper::getValue($data, 'permissions', []));
-        print_r(array_diff(array_keys($this->auth->getPermissions()), array_keys(ArrayHelper::getValue($data, 'permissions', []))));
+        return true;
+    }
 
-        foreach(ArrayHelper::getValue($data, 'roles', []) as $name => $infos)
-        {
-            $this->createOrUpdateItem('role', $name, $infos);
+    protected function getItems($type) {
+        $type = ucfirst($type);
+        $items = call_user_func([$this->auth, 'get' . $type . 's']);
+
+        if($this->module->filterOnAppName) {
+            $items = array_filter($items, function($value) {
+                return strpos($value, \Yii::$app->name . '.') === 0;
+            });
+        }
+    }
+
+    protected function process($data)
+    {
+        foreach(['permission', 'role'] as $type) {
+            $items = ArrayHelper::getValue($data, $type . 's', []);
+
+            // Delete unused role and permission
+            foreach(array_diff(array_keys($this->getItems($type)), array_keys($items)) as $name) {
+                $this->removeItem($type, $name);
+            }
+
+            // Add update role and permission
+            foreach($items as $name => $config)
+            {
+                $this->createOrUpdateItem($type, $name, $config);
+            }
         }
 
         foreach(ArrayHelper::getValue($data, 'assign', []) as $userid => $permissionOrRoles)
