@@ -17,6 +17,17 @@ class LoadController extends \yii\console\Controller
 
     protected $rules = [];
     protected $items = [];
+    protected $auth = null;
+
+    public function init()
+    {
+        if(Yii::$app->has('authManager')) {
+            $this->stderr("'authManager' is not enable", \yii\helpers\Console::BOLD);
+            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+        }
+
+        $this->auth = Yii::$app->authManager;
+    }
 
     /**
      * This command add role or permission to a specific user.
@@ -25,14 +36,12 @@ class LoadController extends \yii\console\Controller
      */
     public function actionAdd($userid, $permissionOrRole)
     {
-        $auth = Yii::$app->authManager;
-
-        if(($obj = $auth->getPermission($permissionOrRole)) === null && ($obj = $auth->getRole($permissionOrRole)) === null)
+        if(($obj = $this->auth->getPermission($permissionOrRole)) === null && ($obj = $this->auth->getRole($permissionOrRole)) === null)
         {
             throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
         }
 
-        return $auth->getAssignment($permissionOrRole, $userid) ? true : $auth->assign($obj, $userid);
+        return $this->auth->getAssignment($permissionOrRole, $userid) ? true : $this->auth->assign($obj, $userid);
     }
 
     /**
@@ -65,14 +74,13 @@ class LoadController extends \yii\console\Controller
     }
 
     protected function createOrUpdateItem($type, $name, $infos) {
-        $auth = Yii::$app->authManager;
         $type = ucfirst($type);
         $isNew = false;
 
-        if(($item = call_user_func([$auth, 'get' . $type], $name)) === null)
+        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) === null)
         {
             $isNew = true;
-            $item = call_user_func([$auth, 'create' . $type], $name);
+            $item = call_user_func([$this->auth, 'create' . $type], $name);
         }
 
         $item->description = ArrayHelper::getValue($infos, 'desc', '');
@@ -80,22 +88,19 @@ class LoadController extends \yii\console\Controller
         // Add rule
         $rule = null;
         if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null && ($rule = $auth->getRule($ruleName)) === null) {
+            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null && ($rule = $this->auth->getRule($ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
-                $auth->add($rule);
+                $this->auth->add($rule);
             }
             $this->rules[$ruleName]	= $rule;
         }
         $item->ruleName = $rule;
-        $children = $auth->getChildren($name);
-
-        print_r(array_keys($children));
-        print_r(ArrayHelper::getValue($infos, 'children',[]));
+        $children = $this->auth->getChildren($name);
 
         // Delete children which have been removed.
         foreach(array_diff(array_keys($children), ArrayHelper::getValue($infos, 'children',[])) as $child) {
             Yii::info(sprintf("Remove child %s from item: %s", $child, $name));
-            $auth->removeChild($item, $permissions[$child]);
+            $this->auth->removeChild($item, $permissions[$child]);
         }
 
         // Add children
@@ -103,19 +108,19 @@ class LoadController extends \yii\console\Controller
         {
             if(!in_array($child, $children)
                 && ArrayHelper::keyExists($child, $this->items)
-                && !$auth->hasChild($item, $this->items[$child]))
+                && !$this->auth->hasChild($item, $this->items[$child]))
             {
                 Yii::info(sprintf("Add child %s to item: %s", $child, $name));
-                $auth->addChild($item, $this->items[$child]);
+                $this->auth->addChild($item, $this->items[$child]);
             }
         }
 
         if($isNew) {
             Yii::info(sprintf("Create item: %s", $name));
-            $auth->add($item);
+            $this->auth->add($item);
         } else {
             Yii::info(sprintf("Update item: %s", $name));
-            $auth->update($name, $item);
+            $this->auth->update($name, $item);
         }
 
         $this->items[$name]	= $item;
