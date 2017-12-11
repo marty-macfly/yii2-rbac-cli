@@ -66,7 +66,7 @@ class LoadController extends \yii\console\Controller
 
                 if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
                     if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
-                        $rule = new $ruleName;
+                        $rule = Yii::createObject($ruleName);
                         $auth->add($rule);
                         $rules[$ruleName]	= $rule;
                     }
@@ -90,7 +90,7 @@ class LoadController extends \yii\console\Controller
 
                 if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
                     if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
-                        $rule = new $ruleName;
+                        $rule = Yii::createObject($ruleName);
                         $auth->add($rule);
                         $rules[$ruleName]	= $rule;
                     }
