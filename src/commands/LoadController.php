@@ -3,6 +3,7 @@ namespace macfly\rbac\commands;
 
 use Yii;
 use yii\console\Exception;
+use yii\helpers\ArrayHelper;
 
 /**
  * This command manage permissions and roles.
@@ -47,43 +48,63 @@ class LoadController extends \yii\console\Controller
 
     protected function process($data)
     {
-        $auth 				= Yii::$app->authManager;
-        $permissions	= [];
+        $auth = Yii::$app->authManager;
+        $permissions = [];
+        $rules = [];
 
-        if(array_key_exists('permissions', $data) && count($data['permissions']) > 0)
+        if(ArrayHelper::keyExists('permissions', $data) && count($data['permissions']) > 0)
         {
             foreach($data['permissions'] as $name => $infos)
             {
-                if(is_null($permission = $auth->getPermission($name)))
+                if(($permission = $auth->getPermission($name)) === null)
                 {
                     $permission = $auth->createPermission($name);
-                    $permission->description = array_key_exists('desc', $infos) ? $infos['desc'] : '';
+                    $permission->description = ArrayHelper::getValue($infos, 'desc', '');
                     $auth->add($permission);
                 }
                 $permissions[$name]	= $permission;
+
+                if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
+                    if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
+                        $rule = new $ruleName;
+                        $auth->add($rule);
+                        $rules[$ruleName]	= $rule;
+                    }
+                    $permission->ruleName = $rule;
+                }
             }
         }
 
-        if(array_key_exists('roles', $data) && count($data['roles']) > 0)
+        if(ArrayHelper::keyExists('roles', $data) && count($data['roles']) > 0)
         {
             foreach($data['roles'] as $name => $infos)
             {
-                if(is_null($role = $auth->getRole($name)))
+                if(($role = $auth->getRole($name)) === null)
                 {
                     $role = $auth->createRole($name);
-                    $role->description = array_key_exists('desc', $infos) ? $infos['desc'] : '';
+                    $role->description = ArrayHelper::getValue($infos, 'desc', '');
                     $auth->add($role);
                 }
 
                 $permissions[$name]	= $role;
-                $children						= $auth->getChildren($name);
 
-                if(array_key_exists('children', $infos))
+                if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
+                    if(($rule = ArrayHelper::getValue($rules, $ruleName)) === null) {
+                        $rule = new $ruleName;
+                        $auth->add($rule);
+                        $rules[$ruleName]	= $rule;
+                    }
+                    $permission->ruleName = $rule;
+                }
+
+                $children = $auth->getChildren($name);
+
+                if(ArrayHelper::keyExists('children', $infos))
                 {
                     foreach($infos['children'] as $child)
                     {
                         if(!in_array($child, $children)
-                            && array_key_exists($child, $permissions)
+                            && ArrayHelper::keyExists($child, $permissions)
                             && !$auth->hasChild($role, $permissions[$child]))
                         {
                             $auth->addChild($role, $permissions[$child]);
@@ -93,7 +114,7 @@ class LoadController extends \yii\console\Controller
             }
         }
 
-        if(array_key_exists('assign', $data) && count($data['assign']) > 0)
+        if(ArrayHelper::keyExists('assign', $data) && count($data['assign']) > 0)
         {
             foreach($data['assign'] as $userid => $permissionOrRoles)
             {
