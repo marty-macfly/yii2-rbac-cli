@@ -21,7 +21,7 @@ class LoadController extends \yii\console\Controller
 
     public function init()
     {
-        if(Yii::$app->has('authManager')) {
+        if(!Yii::$app->has('authManager')) {
             $this->stderr("'authManager' is not enable", \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
@@ -88,11 +88,13 @@ class LoadController extends \yii\console\Controller
         // Add rule
         $rule = null;
         if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-            $rule = Yii::createObject($ruleName);
-            if(($rule = ArrayHelper::getValue($this->rules, $rule->name)) === null && ($rule = $this->auth->getRule($rule->name)) === null) {
-                $this->auth->add($rule);
+            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
+                $rule = Yii::createObject($ruleName);
+                if ($this->auth->getRule($rule->name) === null) {
+                    $this->auth->add($rule);
+                }
             }
-            $this->rules[$rule->name] = $rule;
+            $this->rules[$ruleName] = $rule;
         }
 
         $item->ruleName = $rule;
@@ -136,9 +138,9 @@ class LoadController extends \yii\console\Controller
             $this->createOrUpdateItem('permission', $name, $infos);
         }
 
-        print_r($this->auth-getPermissions());
+        print_r($this->auth->getPermissions());
         print_r(ArrayHelper::getValue($data, 'permissions', []));
-        print_r(array_diff($this->auth-getPermissions(), ArrayHelper::getValue($data, 'permissions', [])));
+        print_r(array_diff(array_keys($this->auth-getPermissions()), array_keys(ArrayHelper::getValue($data, 'permissions', []))));
 
         foreach(ArrayHelper::getValue($data, 'roles', []) as $name => $infos)
         {
