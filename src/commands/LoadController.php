@@ -79,7 +79,7 @@ class LoadController extends \yii\console\Controller
         }
     }
 
-    protected function createOrUpdateItem($type, $name, $infos) {
+    protected function createOrUpdateItem($type, $name, $config) {
         $type = ucfirst($type);
         $isNew = false;
 
@@ -89,10 +89,10 @@ class LoadController extends \yii\console\Controller
             $item = call_user_func([$this->auth, 'create' . $type], $name);
         }
 
-        $item->description = ArrayHelper::getValue($infos, 'desc', '');
+        $item->description = ArrayHelper::getValue($config, 'desc', '');
 
         // Add rule
-        if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
+        if(($ruleName = ArrayHelper::getValue($config, 'rule')) !== null) {
             if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
                 if ($this->auth->getRule($rule->name) === null) {
@@ -109,13 +109,13 @@ class LoadController extends \yii\console\Controller
         $children = $this->auth->getChildren($name);
 
         // Delete children which have been removed.
-        foreach(array_diff(array_keys($children), ArrayHelper::getValue($infos, 'children',[])) as $child) {
+        foreach(array_diff(array_keys($children), ArrayHelper::getValue($config, 'children',[])) as $child) {
             Yii::info(sprintf("Remove child %s from item: %s", $child, $name));
             $this->auth->removeChild($item, $permissions[$child]);
         }
 
         // Add children
-        foreach(ArrayHelper::getValue($infos, 'children',[]) as $child)
+        foreach(ArrayHelper::getValue($config, 'children',[]) as $child)
         {
             if(!in_array($child, $children)
                 && ArrayHelper::keyExists($child, $this->items)
@@ -140,7 +140,7 @@ class LoadController extends \yii\console\Controller
     protected function removeItem($type, $name) {
         $type = ucfirst($type);
 
-        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) === null)
+        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) !== null)
         {
             Yii::info(sprintf("Delete item: %s", $name));
             unset($this->items[$name]);
