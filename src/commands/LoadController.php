@@ -157,8 +157,10 @@ class LoadController extends \yii\console\Controller
         if($this->filterOnAppName) {
             $items = array_filter($items, function($value) {
                 return strpos($value, \Yii::$app->name . '.') === 0;
-            });
+            }, ARRAY_FILTER_USE_KEY);
         }
+
+        return $items;
     }
 
     protected function process($data)
