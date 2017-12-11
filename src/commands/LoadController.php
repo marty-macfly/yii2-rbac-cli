@@ -71,6 +71,7 @@ class LoadController extends \yii\console\Controller
                         $rules[$ruleName]	= $rule;
                     }
                     $permission->ruleName = $rule;
+                    $auth->update($permission);
                 }
             }
         }
@@ -95,6 +96,7 @@ class LoadController extends \yii\console\Controller
                         $rules[$ruleName]	= $rule;
                     }
                     $permission->ruleName = $rule;
+                    $auth->update($permission);
                 }
 
                 $children = $auth->getChildren($name);
