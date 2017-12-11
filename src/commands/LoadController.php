@@ -76,27 +76,37 @@ class LoadController extends \yii\console\Controller
         }
 
         $item->description = ArrayHelper::getValue($infos, 'desc', '');
+
+        // Add rule
         $rule = null;
         if(($ruleName = ArrayHelper::getValue($infos, 'rule')) !== null) {
-            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
+            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null && ($rule = $auth->getRule($ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
                 $auth->add($rule);
-                $this->rules[$ruleName]	= $rule;
             }
+            $this->rules[$ruleName]	= $rule;
         }
         $item->ruleName = $rule;
         $children = $auth->getChildren($name);
 
-        print_r($children);
+        print_r(array_keys($children));
         print_r(ArrayHelper::getValue($infos, 'children',[]));
 
+        // Delete children which have been removed.
+        foreach(array_diff(array_keys($children), ArrayHelper::getValue($infos, 'children',[])) as $child) {
+            Yii::info(sprintf("Remove child %s from item: %s", $child, $name));
+            $auth->removeChild($item, $permissions[$child]);
+        }
+
+        // Add children
         foreach(ArrayHelper::getValue($infos, 'children',[]) as $child)
         {
             if(!in_array($child, $children)
                 && ArrayHelper::keyExists($child, $this->items)
                 && !$auth->hasChild($item, $this->items[$child]))
             {
-                $auth->addChild($item, $permissions[$child]);
+                Yii::info(sprintf("Add child %s to item: %s", $child, $name));
+                $auth->addChild($item, $this->items[$child]);
             }
         }
 
