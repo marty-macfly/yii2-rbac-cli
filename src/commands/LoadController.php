@@ -100,7 +100,14 @@ class LoadController extends \yii\console\Controller
             }
         }
 
-        call_user_func([$auth, $isNew ? 'add' : 'update'], $item);
+        if($isNew) {
+            Yii::info(sprintf("Create item: %s", $name));
+            $auth->add($item);
+        } else {
+            Yii::info(sprintf("Update item: %s", $name));
+            $auth->update($name, $item);
+        }
+
         $this->items[$name]	= $item;
     }
 
