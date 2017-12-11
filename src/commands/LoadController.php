@@ -136,6 +136,10 @@ class LoadController extends \yii\console\Controller
             $this->createOrUpdateItem('permission', $name, $infos);
         }
 
+        print_r($this->auth-getPermissions());
+        print_r(ArrayHelper::getValue($data, 'permissions', []));
+        print_r(array_diff($this->auth-getPermissions(), ArrayHelper::getValue($data, 'permissions', [])));
+
         foreach(ArrayHelper::getValue($data, 'roles', []) as $name => $infos)
         {
             $this->createOrUpdateItem('role', $name, $infos);
