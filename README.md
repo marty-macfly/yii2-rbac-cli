@@ -1,7 +1,6 @@
 # yii2-rbac-cli
 
-
-Yii2 User and Rbac provider from another Yii2 instance for sso or cenralized way to manage user and role.
+Create role and permission from the command line based on the content of a YAML or JSON file.
 
 Installation
 ------------
@@ -69,7 +68,7 @@ roles:
     desc: Administration
     children:
     - view
-    
+
 # Assign permission and roles to a specific userid
 assign:
   1:
