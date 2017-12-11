@@ -105,6 +105,16 @@ class LoadController extends \yii\console\Controller
             $item->ruleName = null;
         }
 
+        if($isNew) {
+            Yii::info(sprintf("Create item: %s", $name));
+            $this->auth->add($item);
+        } else {
+            Yii::info(sprintf("Update item: %s", $name));
+            $this->auth->update($name, $item);
+        }
+
+        $this->items[$name]	= $item;
+
         // Manage item children
         $children = $this->auth->getChildren($name);
 
@@ -125,16 +135,6 @@ class LoadController extends \yii\console\Controller
                 $this->auth->addChild($item, $this->items[$child]);
             }
         }
-
-        if($isNew) {
-            Yii::info(sprintf("Create item: %s", $name));
-            $this->auth->add($item);
-        } else {
-            Yii::info(sprintf("Update item: %s", $name));
-            $this->auth->update($name, $item);
-        }
-
-        $this->items[$name]	= $item;
     }
 
     protected function removeItem($type, $name) {
