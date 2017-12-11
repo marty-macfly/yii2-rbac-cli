@@ -14,6 +14,7 @@ use yii\helpers\Json;
 class LoadController extends \yii\console\Controller
 {
     public $defaultAction = 'yaml';
+    public $filterOnAppName = true;
 
     protected $rules = [];
     protected $items = [];
@@ -27,6 +28,11 @@ class LoadController extends \yii\console\Controller
         }
 
         $this->auth = Yii::$app->authManager;
+    }
+
+    public function options($actionID)
+    {
+        return ['filterOnAppName'];
     }
 
     /**
@@ -148,7 +154,7 @@ class LoadController extends \yii\console\Controller
         $type = ucfirst($type);
         $items = call_user_func([$this->auth, 'get' . $type . 's']);
 
-        if($this->module->filterOnAppName) {
+        if($this->filterOnAppName) {
             $items = array_filter($items, function($value) {
                 return strpos($value, \Yii::$app->name . '.') === 0;
             });
