@@ -168,6 +168,10 @@ class LoadController extends \yii\console\Controller
         foreach(['permission', 'role'] as $type) {
             $items = ArrayHelper::getValue($data, $type . 's', []);
 
+            if($items === null) {
+                continue;
+            }
+
             // Delete unused role and permission
             foreach(array_diff(array_keys($this->getItems($type)), array_keys($items)) as $name) {
                 $this->removeItem($type, $name);
