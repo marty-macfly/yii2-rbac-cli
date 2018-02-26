@@ -22,7 +22,7 @@ class LoadController extends \yii\console\Controller
 
     public function init()
     {
-        if(!Yii::$app->has('authManager')) {
+        if (!Yii::$app->has('authManager')) {
             $this->stderr("'authManager' is not enable", \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
@@ -42,8 +42,7 @@ class LoadController extends \yii\console\Controller
      */
     public function actionAdd($userid, $permissionOrRole)
     {
-        if(($obj = $this->auth->getPermission($permissionOrRole)) === null && ($obj = $this->auth->getRole($permissionOrRole)) === null)
-        {
+        if (($obj = $this->auth->getPermission($permissionOrRole)) === null && ($obj = $this->auth->getRole($permissionOrRole)) === null) {
             throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
         }
 
@@ -72,19 +71,18 @@ class LoadController extends \yii\console\Controller
 
     protected function fileExist($file)
     {
-        if(!file_exists($file))
-        {
+        if (!file_exists($file)) {
             $this->stderr(sprintf("file '%s' doesn't exit", $file), \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
     }
 
-    protected function createOrUpdateItem($type, $name, $config) {
+    protected function createOrUpdateItem($type, $name, $config)
+    {
         $type = ucfirst($type);
         $isNew = false;
 
-        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) === null)
-        {
+        if (($item = call_user_func([$this->auth, 'get' . $type], $name)) === null) {
             $isNew = true;
             $item = call_user_func([$this->auth, 'create' . $type], $name);
         }
@@ -92,8 +90,8 @@ class LoadController extends \yii\console\Controller
         $item->description = ArrayHelper::getValue($config, 'desc', '');
 
         // Add rule
-        if(($ruleName = ArrayHelper::getValue($config, 'rule')) !== null) {
-            if(($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
+        if (($ruleName = ArrayHelper::getValue($config, 'rule')) !== null) {
+            if (($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
                 if ($this->auth->getRule($rule->name) === null) {
                     $this->auth->add($rule);
@@ -105,7 +103,7 @@ class LoadController extends \yii\console\Controller
             $item->ruleName = null;
         }
 
-        if($isNew) {
+        if ($isNew) {
             Yii::info(sprintf("Create item: %s", $name));
             $this->auth->add($item);
         } else {
@@ -119,29 +117,31 @@ class LoadController extends \yii\console\Controller
         $children = $this->auth->getChildren($name);
 
         // Delete children which have been removed.
-        foreach(array_diff(array_keys($children), ArrayHelper::getValue($config, 'children',[])) as $child) {
+        foreach (array_diff(array_keys($children), ArrayHelper::getValue($config, 'children', [])) as $child) {
             Yii::info(sprintf("Remove child %s from item: %s", $child, $name));
-            $this->auth->removeChild($item, $permissions[$child]);
+            if (($citem = $this->auth->getPermission($child)) !== null || ($citem = $this->auth->getRole($child)) !== null) {
+                $this->auth->removeChild($item, $citem);
+            } else {
+                Yii::warning(sprintf("Role/Permission %s doesn't exist", $child));
+            }
         }
 
         // Add children
-        foreach(ArrayHelper::getValue($config, 'children',[]) as $child)
-        {
-            if(!in_array($child, $children)
+        foreach (ArrayHelper::getValue($config, 'children', []) as $child) {
+            if (!in_array($child, $children)
                 && ArrayHelper::keyExists($child, $this->items)
-                && !$this->auth->hasChild($item, $this->items[$child]))
-            {
+                && !$this->auth->hasChild($item, $this->items[$child])) {
                 Yii::info(sprintf("Add child %s to item: %s", $child, $name));
                 $this->auth->addChild($item, $this->items[$child]);
             }
         }
     }
 
-    protected function removeItem($type, $name) {
+    protected function removeItem($type, $name)
+    {
         $type = ucfirst($type);
 
-        if(($item = call_user_func([$this->auth, 'get' . $type], $name)) !== null)
-        {
+        if (($item = call_user_func([$this->auth, 'get' . $type], $name)) !== null) {
             Yii::info(sprintf("Delete item: %s", $name));
             unset($this->items[$name]);
             return $this->auth->remove($item);
@@ -150,12 +150,13 @@ class LoadController extends \yii\console\Controller
         return true;
     }
 
-    protected function getItems($type) {
+    protected function getItems($type)
+    {
         $type = ucfirst($type);
         $items = call_user_func([$this->auth, 'get' . $type . 's']);
 
-        if($this->filterOnAppName) {
-            $items = array_filter($items, function($value) {
+        if ($this->filterOnAppName) {
+            $items = array_filter($items, function ($value) {
                 return strpos($value, \Yii::$app->name . '.') === 0;
             }, ARRAY_FILTER_USE_KEY);
         }
@@ -165,29 +166,26 @@ class LoadController extends \yii\console\Controller
 
     protected function process($data)
     {
-        foreach(['permission', 'role'] as $type) {
+        foreach (['permission', 'role'] as $type) {
             $items = ArrayHelper::getValue($data, $type . 's', []);
 
-            if($items === null) {
+            if ($items === null) {
                 continue;
             }
 
             // Delete unused role and permission
-            foreach(array_diff(array_keys($this->getItems($type)), array_keys($items)) as $name) {
+            foreach (array_diff(array_keys($this->getItems($type)), array_keys($items)) as $name) {
                 $this->removeItem($type, $name);
             }
 
             // Add update role and permission
-            foreach($items as $name => $config)
-            {
+            foreach ($items as $name => $config) {
                 $this->createOrUpdateItem($type, $name, $config);
             }
         }
 
-        foreach(ArrayHelper::getValue($data, 'assign', []) as $userid => $permissionOrRoles)
-        {
-            foreach($permissionOrRoles as $permissionOrRole)
-            {
+        foreach (ArrayHelper::getValue($data, 'assign', []) as $userid => $permissionOrRoles) {
+            foreach ($permissionOrRoles as $permissionOrRole) {
                 try {
                     $this->actionAdd($userid, $permissionOrRole);
                 } catch (Exception $exception) {
