@@ -26,8 +26,6 @@ class LoadController extends \yii\console\Controller
             $this->stderr("'authManager' is not enable", \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
-
-        $this->auth = Yii::$app->authManager;
     }
 
     public function options($actionID)
@@ -42,11 +40,11 @@ class LoadController extends \yii\console\Controller
      */
     public function actionAdd($userid, $permissionOrRole)
     {
-        if (($obj = $this->auth->getPermission($permissionOrRole)) === null && ($obj = $this->auth->getRole($permissionOrRole)) === null) {
+        if (($obj = Yii::$app->authManager->getPermission($permissionOrRole)) === null && ($obj = Yii::$app->authManager->getRole($permissionOrRole)) === null) {
             throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
         }
 
-        return $this->auth->getAssignment($permissionOrRole, $userid) ? true : $this->auth->assign($obj, $userid);
+        return Yii::$app->authManager->getAssignment($permissionOrRole, $userid) ? true : Yii::$app->authManager->assign($obj, $userid);
     }
 
     /**
@@ -82,9 +80,9 @@ class LoadController extends \yii\console\Controller
         $type = ucfirst($type);
         $isNew = false;
 
-        if (($item = call_user_func([$this->auth, 'get' . $type], $name)) === null) {
+        if (($item = call_user_func([Yii::$app->authManager, 'get' . $type], $name)) === null) {
             $isNew = true;
-            $item = call_user_func([$this->auth, 'create' . $type], $name);
+            $item = call_user_func([Yii::$app->authManager, 'create' . $type], $name);
         }
 
         $item->description = ArrayHelper::getValue($config, 'desc', '');
@@ -93,8 +91,8 @@ class LoadController extends \yii\console\Controller
         if (($ruleName = ArrayHelper::getValue($config, 'rule')) !== null) {
             if (($rule = ArrayHelper::getValue($this->rules, $ruleName)) === null) {
                 $rule = Yii::createObject($ruleName);
-                if ($this->auth->getRule($rule->name) === null) {
-                    $this->auth->add($rule);
+                if (Yii::$app->authManager->getRule($rule->name) === null) {
+                    Yii::$app->authManager->add($rule);
                     $this->rules[$ruleName] = $rule;
                 }
             }
@@ -105,22 +103,22 @@ class LoadController extends \yii\console\Controller
 
         if ($isNew) {
             Yii::info(sprintf("Create item: %s", $name));
-            $this->auth->add($item);
+            Yii::$app->authManager->add($item);
         } else {
             Yii::info(sprintf("Update item: %s", $name));
-            $this->auth->update($name, $item);
+            Yii::$app->authManager->update($name, $item);
         }
 
         $this->items[$name]	= $item;
 
         // Manage item children
-        $children = $this->auth->getChildren($name);
+        $children = Yii::$app->authManager->getChildren($name);
 
         // Delete children which have been removed.
         foreach (array_diff(array_keys($children), ArrayHelper::getValue($config, 'children', [])) as $child) {
             Yii::info(sprintf("Remove child %s from item: %s", $child, $name));
-            if (($citem = $this->auth->getPermission($child)) !== null || ($citem = $this->auth->getRole($child)) !== null) {
-                $this->auth->removeChild($item, $citem);
+            if (($citem = Yii::$app->authManager->getPermission($child)) !== null || ($citem = Yii::$app->authManager->getRole($child)) !== null) {
+                Yii::$app->authManager->removeChild($item, $citem);
             } else {
                 Yii::warning(sprintf("Role/Permission %s doesn't exist", $child));
             }
@@ -130,9 +128,9 @@ class LoadController extends \yii\console\Controller
         foreach (ArrayHelper::getValue($config, 'children', []) as $child) {
             if (!in_array($child, $children)
                 && ArrayHelper::keyExists($child, $this->items)
-                && !$this->auth->hasChild($item, $this->items[$child])) {
+                && !Yii::$app->authManager->hasChild($item, $this->items[$child])) {
                 Yii::info(sprintf("Add child %s to item: %s", $child, $name));
-                $this->auth->addChild($item, $this->items[$child]);
+                Yii::$app->authManager->addChild($item, $this->items[$child]);
             }
         }
     }
@@ -141,10 +139,10 @@ class LoadController extends \yii\console\Controller
     {
         $type = ucfirst($type);
 
-        if (($item = call_user_func([$this->auth, 'get' . $type], $name)) !== null) {
+        if (($item = call_user_func([Yii::$app->authManager, 'get' . $type], $name)) !== null) {
             Yii::info(sprintf("Delete item: %s", $name));
             unset($this->items[$name]);
-            return $this->auth->remove($item);
+            return Yii::$app->authManager->remove($item);
         }
 
         return true;
@@ -153,7 +151,7 @@ class LoadController extends \yii\console\Controller
     protected function getItems($type)
     {
         $type = ucfirst($type);
-        $items = call_user_func([$this->auth, 'get' . $type . 's']);
+        $items = call_user_func([Yii::$app->authManager, 'get' . $type . 's']);
 
         if ($this->filterOnAppName) {
             $items = array_filter($items, function ($value) {
