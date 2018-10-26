@@ -23,7 +23,7 @@ class LoadController extends \yii\console\Controller
     public function init()
     {
         if (!Yii::$app->has('authManager')) {
-            $this->stderr("'authManager' is not enable", \yii\helpers\Console::BOLD);
+            $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
     }
@@ -70,7 +70,7 @@ class LoadController extends \yii\console\Controller
     protected function fileExist($file)
     {
         if (!file_exists($file)) {
-            $this->stderr(sprintf("file '%s' doesn't exit", $file), \yii\helpers\Console::BOLD);
+            $this->stderr(sprintf("file '%s' doesn't exit" . PHP_EOL, $file), \yii\helpers\Console::BOLD);
             exit(\yii\console\Controller::EXIT_CODE_ERROR);
         }
     }
