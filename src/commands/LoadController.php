@@ -20,14 +20,6 @@ class LoadController extends \yii\console\Controller
     protected $items = [];
     protected $auth = null;
 
-    public function init()
-    {
-        if (!Yii::$app->has('authManager')) {
-            $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
-            exit(\yii\console\Controller::EXIT_CODE_ERROR);
-        }
-    }
-
     public function options($actionID)
     {
         return ['filterOnAppName'];
@@ -40,6 +32,11 @@ class LoadController extends \yii\console\Controller
      */
     public function actionAdd($userid, $permissionOrRole)
     {
+        if (!Yii::$app->has('authManager')) {
+            $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
+            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+        }
+
         if (($obj = Yii::$app->authManager->getPermission($permissionOrRole)) === null && ($obj = Yii::$app->authManager->getRole($permissionOrRole)) === null) {
             throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
         }
@@ -53,6 +50,11 @@ class LoadController extends \yii\console\Controller
      */
     public function actionYaml($file)
     {
+        if (!Yii::$app->has('authManager')) {
+            $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
+            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+        }
+
         $this->fileExist($file);
         return $this->process(yaml_parse_file($file));
     }
