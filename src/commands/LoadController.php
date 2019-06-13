@@ -185,31 +185,26 @@ class LoadController extends \yii\console\Controller
         }
 
         $assignData = ArrayHelper::getValue($data, 'assign', []);
-        $findBy = ArrayHelper::remove($assignData, 'findBy');
+        $findBy = ArrayHelper::remove($assignData, 'findBy', 'findIdentity');
+
+        // Check function exist before execute
+        if(!method_exists(Yii::$app->user->identityClass, $findBy)) {
+            Yii::error(sprintf("Method %s doesn't exist", $findBy));
+            exit();
+        }
+
         foreach ($assignData as $userid => $permissionOrRoles) {
             Yii::info(sprintf("User %s start:", $userid));
-            if(!is_null($findBy)) {
-                try {
-                    $userInfo = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [ $userid ]);
-                } catch (\ErrorException $exception) { // Catch function doesn't exist
-                    Yii::error(sprintf("%s", $exception->getMessage()));
-                    exit();
-                } catch (yii\authclient\InvalidResponseException $exception) { // Catch query response code 404
-                    Yii::warning(sprintf("%s", $exception->getMessage()));
-                    continue;
-                }
-                if(is_null($userInfo) || is_null($userid = ArrayHelper::getValue($userInfo, 'id'))) {
-                    Yii::warning(sprintf("User does not exist."));
-                    continue;
-                }
+            $userInfo = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [ $userid ]);
+
+            if(is_null($userInfo) || is_null($userid = ArrayHelper::getValue($userInfo, 'id'))) {
+                Yii::warning(sprintf("User does not exist"));
+                continue;
             }
 
             foreach ($permissionOrRoles as $permissionOrRole) {
                 try {
                     $this->actionAdd($userid, $permissionOrRole);
-                } catch (yii\authclient\InvalidResponseException $exception) { // User does not exist -> skip this user
-                    Yii::warning(sprintf("%s", $exception->getMessage()));
-                    break;
                 } catch (yii\console\Exception $exception) {  // Role does not exist -> skip this role
                     Yii::warning(sprintf("%s", $exception->getMessage()));
                     continue;
