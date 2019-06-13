@@ -184,12 +184,35 @@ class LoadController extends \yii\console\Controller
             }
         }
 
-        foreach (ArrayHelper::getValue($data, 'assign', []) as $userid => $permissionOrRoles) {
+        $assignData = ArrayHelper::getValue($data, 'assign', []);
+        $findBy = ArrayHelper::remove($assignData, 'findBy');
+        foreach ($assignData as $userid => $permissionOrRoles) {
+            Yii::info(sprintf("User %s start:", $userid));
+            if(!is_null($findBy)) {
+                try {
+                    $userInfo = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [ $userid ]);
+                } catch (\ErrorException $exception) { // Catch function doesn't exist
+                    Yii::error(sprintf("%s", $exception->getMessage()));
+                    exit();
+                } catch (yii\authclient\InvalidResponseException $exception) { // Catch query response code 404
+                    Yii::warning(sprintf("%s", $exception->getMessage()));
+                    continue;
+                }
+                if(is_null($userInfo) || is_null($userid = ArrayHelper::getValue($userInfo, 'id'))) {
+                    Yii::warning(sprintf("User does not exist."));
+                    continue;
+                }
+            }
+
             foreach ($permissionOrRoles as $permissionOrRole) {
                 try {
                     $this->actionAdd($userid, $permissionOrRole);
-                } catch (Exception $exception) {
-                    Yii::error(sprintf("%s", $exception->getMessage()));
+                } catch (yii\authclient\InvalidResponseException $exception) { // User does not exist -> skip this user
+                    Yii::warning(sprintf("%s", $exception->getMessage()));
+                    break;
+                } catch (yii\console\Exception $exception) {  // Role does not exist -> skip this role
+                    Yii::warning(sprintf("%s", $exception->getMessage()));
+                    continue;
                 }
             }
         }
