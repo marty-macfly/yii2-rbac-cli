@@ -31,7 +31,7 @@ class LoadController extends \yii\console\Controller
      * @userid integer the user id on which you want to add role or permission
      * @permissionOrRole string name of the role or permission you want to add
      */
-    public function actionAdd($userKey, $permissionOrRole)
+    public function actionAdd($userid, $permissionOrRole)
     {
         if (!Yii::$app->has('authManager')) {
             $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
@@ -43,7 +43,7 @@ class LoadController extends \yii\console\Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        return Yii::$app->authManager->getAssignment($permissionOrRole, $userKey) ? true : Yii::$app->authManager->assign($obj, $userKey);
+        return Yii::$app->authManager->getAssignment($permissionOrRole, $userid) ? true : Yii::$app->authManager->assign($obj, $userid);
     }
 
     /**
@@ -198,12 +198,12 @@ class LoadController extends \yii\console\Controller
         foreach ($assignData as $userKey => $permissionOrRoles) {
             Yii::info(sprintf("User %s start:", $userKey));
 
-            if(is_null($identity = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [$userKey]))) {
+            if(($identity = call_user_func_array([Yii::$app->user->identityClass, $findBy], [$userKey])) === null) {
                 continue;
-            } else {
-                foreach ($permissionOrRoles as $permissionOrRole) {
-                    $this->actionAdd($identity->getId(), $permissionOrRole);
-                }
+            }
+            
+            foreach ($permissionOrRoles as $permissionOrRole) {
+                $this->actionAdd($identity->getId(), $permissionOrRole);
             }
         }
     }
