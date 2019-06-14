@@ -5,6 +5,7 @@ use Yii;
 use yii\console\Exception;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
+use yii\console\ExitCode;
 
 /**
  * This command manage permissions and roles.
@@ -30,18 +31,19 @@ class LoadController extends \yii\console\Controller
      * @userid integer the user id on which you want to add role or permission
      * @permissionOrRole string name of the role or permission you want to add
      */
-    public function actionAdd($userid, $permissionOrRole)
+    public function actionAdd($userKey, $permissionOrRole)
     {
         if (!Yii::$app->has('authManager')) {
             $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
-            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+            return ExitCode::UNSPECIFIED_ERROR;
         }
 
         if (($obj = Yii::$app->authManager->getPermission($permissionOrRole)) === null && ($obj = Yii::$app->authManager->getRole($permissionOrRole)) === null) {
-            throw new Exception(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
+            Yii::error(sprintf("Permission or role '%s' doesn't exist", $permissionOrRole));
+            return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        return Yii::$app->authManager->getAssignment($permissionOrRole, $userid) ? true : Yii::$app->authManager->assign($obj, $userid);
+        return Yii::$app->authManager->getAssignment($permissionOrRole, $userKey) ? true : Yii::$app->authManager->assign($obj, $userKey);
     }
 
     /**
@@ -52,7 +54,7 @@ class LoadController extends \yii\console\Controller
     {
         if (!Yii::$app->has('authManager')) {
             $this->stderr("'authManager' is not enable, skipping static roles/permissions creation." . PHP_EOL, \yii\helpers\Console::BOLD);
-            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+            return ExitCode::UNSPECIFIED_ERROR;
         }
 
         $this->fileExist($file);
@@ -73,7 +75,7 @@ class LoadController extends \yii\console\Controller
     {
         if (!file_exists($file)) {
             $this->stderr(sprintf("file '%s' doesn't exit" . PHP_EOL, $file), \yii\helpers\Console::BOLD);
-            exit(\yii\console\Controller::EXIT_CODE_ERROR);
+            return ExitCode::UNSPECIFIED_ERROR;
         }
     }
 
@@ -190,24 +192,17 @@ class LoadController extends \yii\console\Controller
         // Check function exist before execute
         if(!method_exists(Yii::$app->user->identityClass, $findBy)) {
             Yii::error(sprintf("Method %s doesn't exist", $findBy));
-            exit();
+            return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        foreach ($assignData as $userid => $permissionOrRoles) {
-            Yii::info(sprintf("User %s start:", $userid));
-            $userInfo = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [ $userid ]);
+        foreach ($assignData as $userKey => $permissionOrRoles) {
+            Yii::info(sprintf("User %s start:", $userKey));
 
-            if(is_null($userInfo) || is_null($userid = ArrayHelper::getValue($userInfo, 'id'))) {
-                Yii::warning(sprintf("User does not exist"));
+            if(is_null($identity = call_user_func_array([ Yii::$app->user->identityClass, $findBy ], [$userKey]))) {
                 continue;
-            }
-
-            foreach ($permissionOrRoles as $permissionOrRole) {
-                try {
-                    $this->actionAdd($userid, $permissionOrRole);
-                } catch (yii\console\Exception $exception) {  // Role does not exist -> skip this role
-                    Yii::warning(sprintf("%s", $exception->getMessage()));
-                    continue;
+            } else {
+                foreach ($permissionOrRoles as $permissionOrRole) {
+                    $this->actionAdd($identity->getId(), $permissionOrRole);
                 }
             }
         }
