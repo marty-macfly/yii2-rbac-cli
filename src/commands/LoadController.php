@@ -73,7 +73,7 @@ class LoadController extends Controller
             $this->stderr(
                 "'authManager' is not enable, skipping static roles/permissions creation." .
                     PHP_EOL,
-                \yii\helpers\Console::BOLD,
+                Console::BOLD,
             );
             return Controller::EXIT_CODE_ERROR;
         }
@@ -97,7 +97,7 @@ class LoadController extends Controller
         if (!file_exists($file)) {
             $this->stderr(
                 sprintf("file '%s' doesn't exit" . PHP_EOL, $file),
-                \yii\helpers\Console::BOLD,
+                Console::BOLD,
             );
             return Controller::EXIT_CODE_ERROR;
         }
@@ -198,7 +198,7 @@ class LoadController extends Controller
                 $name,
             )) !== null
         ) {
-            Yii::info(sprintf('Delete item: %s', $name));
+            $this->stdout(sprintf("[%s] delete: %s\n", $this->ansiFormat($name, Console::FG_RED)));
             unset($this->items[$name]);
             return Yii::$app->authManager->remove($item);
         }
